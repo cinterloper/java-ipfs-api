@@ -75,12 +75,47 @@ public class Test {
             List<Multihash> add2 = ipfs.pin.add(hash);
             // adding something already pinned should succeed
             List<Multihash> add3 = ipfs.pin.add(hash);
-            Map<Multihash, Object> ls = ipfs.pin.ls();
+            Map<Multihash, Object> ls = ipfs.pin.ls(IPFS.PinType.recursive);
+            ipfs.repo.gc();
+            // object should still be present after gc
+            Map<Multihash, Object> ls2 = ipfs.pin.ls(IPFS.PinType.recursive);
+            boolean stillPinned = ls2.containsKey(hash);
             System.out.println(ls);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
+
+    @org.junit.Test
+    public void indirectPinTest() {
+        try {
+            Multihash EMPTY = ipfs.object._new(Optional.empty()).hash;
+            org.ipfs.api.MerkleNode data = ipfs.object.patch(EMPTY, "set-data", Optional.of("childdata".getBytes()), Optional.empty(), Optional.empty());
+            Multihash child = data.hash;
+
+            org.ipfs.api.MerkleNode tmp1 = ipfs.object.patch(EMPTY, "set-data", Optional.of("parent1_data".getBytes()), Optional.empty(), Optional.empty());
+            Multihash parent1 = ipfs.object.patch(tmp1.hash, "add-link", Optional.empty(), Optional.of(child.toString()), Optional.of(child)).hash;
+            ipfs.pin.add(parent1);
+
+            org.ipfs.api.MerkleNode tmp2 = ipfs.object.patch(EMPTY, "set-data", Optional.of("parent2_data".getBytes()), Optional.empty(), Optional.empty());
+            Multihash parent2 = ipfs.object.patch(tmp2.hash, "add-link", Optional.empty(), Optional.of(child.toString()), Optional.of(child)).hash;
+            ipfs.pin.add(parent2);
+            ipfs.pin.rm(parent1, true);
+
+            Map<Multihash, Object> ls = ipfs.pin.ls(IPFS.PinType.all);
+            boolean childPresent = ls.containsKey(child);
+            if (!childPresent)
+                throw new IllegalStateException("Child not present!");
+
+            ipfs.repo.gc();
+            Map<Multihash, Object> ls2 = ipfs.pin.ls(IPFS.PinType.all);
+            boolean childPresentAfterGC = ls2.containsKey(child);
+            if (!childPresentAfterGC)
+                throw new IllegalStateException("Child not present!");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+}
 
     @org.junit.Test
     public void objectPatch() {
@@ -98,18 +133,20 @@ public class Test {
                 throw new RuntimeException("Adding not inverse of removing link!");
 
             // data tests
-            byte[] data = "somerandomdata".getBytes();
+//            byte[] data = "some random textual data".getBytes();
+            byte[] data = new byte[1024];
+            new Random().nextBytes(data);
             MerkleNode patched = ipfs.object.patch(base, "set-data", Optional.of(data), Optional.empty(), Optional.empty());
-            MerkleNode patchedResult = ipfs.object.get(patched.hash);
-            if (!Arrays.equals(patchedResult.data.get(), data))
+            byte[] patchedResult = ipfs.object.data(patched.hash);
+            if (!Arrays.equals(patchedResult, data))
                 throw new RuntimeException("object.patch: returned data != stored data!");
 
             MerkleNode twicePatched = ipfs.object.patch(patched.hash, "append-data", Optional.of(data), Optional.empty(), Optional.empty());
-            MerkleNode twicePatchedResult = ipfs.object.get(twicePatched.hash);
+            byte[] twicePatchedResult = ipfs.object.data(twicePatched.hash);
             byte[] twice = new byte[2*data.length];
             for (int i=0; i < 2; i++)
                 System.arraycopy(data, 0, twice, i*data.length, data.length);
-            if (!Arrays.equals(twicePatchedResult.data.get(), twice))
+            if (!Arrays.equals(twicePatchedResult, twice))
                 throw new RuntimeException("object.patch: returned data after append != stored data!");
 
         } catch (IOException e) {
@@ -240,8 +277,9 @@ public class Test {
             Map disconnect = ipfs.swarm.disconnect(multiaddr);
             Map<String, Object> addrs = ipfs.swarm.addrs();
             if (addrs.size() > 0) {
-                Map id = ipfs.id(addrs.keySet().stream().findAny().get());
-                Map ping = ipfs.ping(addrs.keySet().stream().findAny().get());
+                String target = addrs.keySet().stream().findAny().get();
+                Map id = ipfs.id(target);
+                Map ping = ipfs.ping(target);
             }
             List<MultiAddress> peers = ipfs.swarm.peers();
             System.out.println(peers);
