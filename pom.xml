@@ -24,6 +24,12 @@
 			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
+<dependency>
+  <groupId>io.atomix</groupId>
+  <artifactId>atomix-all</artifactId>
+  <version>1.0.0-rc2</version>
+</dependency>
+
 		<dependency>
 			<groupId>org.hamcrest</groupId>
 			<artifactId>hamcrest-core</artifactId>
