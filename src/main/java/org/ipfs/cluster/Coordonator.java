@@ -1,4 +1,4 @@
-package org.ipfs.api;
+package org.ipfs.cluster;
 
 import io.atomix.Atomix;
 
@@ -13,6 +13,7 @@ import io.atomix.coordination.LocalGroupMember;
 import io.atomix.copycat.server.storage.Storage;
 import io.atomix.copycat.server.storage.StorageLevel;
 import io.atomix.messaging.DistributedMessageBus;
+import org.ipfs.api.Multihash;
 
 import java.util.ArrayList;
 import java.util.Arrays;
