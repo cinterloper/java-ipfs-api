@@ -21,17 +21,32 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Created by grant on 3/4/16.
+ * Created by grant
+ *
+ * for writes
+ * this should instruct a specific number of peer nodes to 'pin'
+ * an object hash locally, after we have written it to the destionation.
+ * so write -> target (sync, ack first storage and return operation id for replication
+ * when the replication operation has been confirmed by the target number of peers
+ * we should wake up a callback, and mark the replication id as completed
+ *
+ *
  */
+
+
 public class Coordonator {
+    //enh.... the worst that could happen is the replication operation is never confirmed
+    // but the sync write to the first target is either already happened or never finishes
     private static Storage storage = new Storage(StorageLevel.MEMORY);
+
     private static Transport transport = new NettyTransport();
     private static AtomixReplica replica;
-    DistributedGroup ipfsReplicationGroup;
-    DistributedMessageBus bus;
-    LocalGroupMember membership;
+    private DistributedGroup ipfsReplicationGroup;
+    private DistributedMessageBus bus;
+    private LocalGroupMember membership;
 
     Coordonator(Address address, List<Address> members) {
+
         replica = AtomixReplica.builder(address, members)
                 .withStorage(storage)
                 .withTransport(transport)
