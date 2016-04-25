@@ -4,7 +4,7 @@
 
 	<groupId>org.ipfs</groupId>
 	<artifactId>api</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1-CLUSTER3</version>
 	<packaging>jar</packaging>
 
 	<name>java-ipfs-api</name>
@@ -24,11 +24,7 @@
 			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
-<dependency>
-  <groupId>io.atomix</groupId>
-  <artifactId>atomix-all</artifactId>
-  <version>1.0.0-rc3</version>
-</dependency>
+
 
 		<dependency>
 			<groupId>org.hamcrest</groupId>
